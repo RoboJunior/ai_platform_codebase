@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "app"
+version = "0.1.0"
+description = "Ai app which makes life easier"
+authors = ["jeyaraman"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.115.6"
+uvicorn = "^0.34.0"
+pydantic-settings = "^2.7.0"
+sqlalchemy = "^2.0.36"
+passlib = "^1.7.4"
+pydantic = {extras = ["email"], version = "^2.10.4"}
+bcrypt = "^4.2.1"
+alembic = "^1.14.0"
+temporalio = "^1.9.0"
+python-jose = "^3.3.0"
+python-multipart = "^0.0.20"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
