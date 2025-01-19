@@ -61,15 +61,24 @@ async def join_team(team_data: JoinTeam, background_task: BackgroundTasks, db: S
     if existing_membership:
         raise HTTPException(status_code=400, detail="User is already part of this team")
     
+    # Check wheather user got invited to the team
+    is_invited = db.query(models.Invitations).filter(
+        models.Invitations.team_id == team.id,
+        models.Invitations.invited_user_email == current_user.email
+        ).first()
+    
+    if not is_invited:
+        raise HTTPException(status_code=403, detail="User have not invited to join the team")
+    
     # Add user to the team with the role viewver
     membership = models.Membership(user_id=current_user.id, team_id=team.id, role=models.Role.VIEWER)
     db.add(membership)
     db.commit()
-    background_task.add_task(start_app_notifications_workflow, "teams", f"New user {current_user.email} has joined the team!")
+    background_task.add_task(start_app_notifications_workflow, [{"team_id": team.id}], f"New user {current_user.email} has joined the team!", db)
     return membership
 
 @team_router.post("/invite/{team_id}", status_code=status.HTTP_201_CREATED)
-def invite_team(team_id: int, team: InviteToTeam, background_task: BackgroundTasks, db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
+def invite_team(team_id: int, invited_member: InviteToTeam, background_task: BackgroundTasks, db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
     # Check wheather the team exists or not
     team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not team:
@@ -88,7 +97,7 @@ def invite_team(team_id: int, team: InviteToTeam, background_task: BackgroundTas
         raise HTTPException(status_code=403, detail="User doesnt have access to invite members to the team")
 
     # Check wheather the user is already part of the system or not
-    invited_user = db.query(models.User).filter(models.User.email == team.email).first()
+    invited_user = db.query(models.User).filter(models.User.email == invited_member.email).first()
     if invited_user:
         # If the user is registerd check if they are already part of the team
         is_member = db.query(models.Membership).filter(
@@ -99,11 +108,19 @@ def invite_team(team_id: int, team: InviteToTeam, background_task: BackgroundTas
             raise HTTPException(status_code=400, detail="User already a member of the team")
     else:
         print(team.email, team_details.name, team_details.team_code)
+        new_invitation = models.Invitations(team_id=team_id, invited_user_email=invited_member.email)
+        db.add(new_invitation)
+        db.commit()
+        db.refresh(new_invitation)
         background_task.add_task(start_invitation_email_workflow, team.email, team_details.name, team_details.team_code)
-        return {"Message": f"Invitation mail successfully sent to user mail : {team.email}"}
+        return new_invitation
     
-    background_task.add_task(start_invitation_email_workflow, team.email, team_details.name, team_details.team_code)
-    return {"Message": f"Invitation mail successfully sent to user mail : {team.email}"}
+    new_invitation = models.Invitations(team_id=team_id, invited_user_email=invited_member.email)
+    db.add(new_invitation)
+    db.commit()
+    db.refresh(new_invitation)
+    background_task.add_task(start_invitation_email_workflow, invited_member.email, team_details.name, team_details.team_code)
+    return new_invitation
 
 @team_router.get('/get_all_team_members/{team_id}', status_code=status.HTTP_200_OK, response_model=List[GetTeamMember])
 def get_all_teammates(team_id: int, db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
@@ -166,6 +183,15 @@ def remove_user_from_the_team(user_id: int, team_id: int, db: Session = Depends(
     if not is_admin:
         raise HTTPException(status_code=403, detail="User doesnt have access to remove team member")
     
+    is_invited = db.query(models.Invitations).filter(
+        models.Invitations.team_id == team_id,
+        models.Invitations.invited_user_email == current_user.email
+    ).first()
+    
+    # Delete the invitation of the user preventing the user from joining the team again without any admin permission
+    db.delete(is_invited)
+    db.commit()
+    
     # Commit the deleted data into the database
     db.delete(is_member)
     db.commit()
@@ -185,6 +211,15 @@ async def leave_from_team(team_id: int, db: Session = Depends(get_database_sessi
     ).first()
     if not is_member:
         raise HTTPException(status_code=400, detail="You are not the member of the team")
+    
+    is_invited = db.query(models.Invitations).filter(
+        models.Invitations.team_id == team_id,
+        models.Invitations.invited_user_email == current_user.email
+    ).first()
+    
+    # Delete the invitation of the user preventing the user from joining the team again without any admin permission
+    db.delete(is_invited)
+    db.commit()
 
     # Commit the deleted data to the database
     db.delete(is_member)

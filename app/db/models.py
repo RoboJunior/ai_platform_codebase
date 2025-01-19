@@ -19,7 +19,8 @@ class User(Base):
     email = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
-    memberships = relationship("Membership", back_populates="user")
+    memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
+    notifications = relationship("Notifications", back_populates="user", cascade="all, delete-orphan")
 
 class Team(Base):
     __tablename__ = "teams"
@@ -28,7 +29,9 @@ class Team(Base):
     name = Column(String, nullable=False)
     team_code = Column(String, unique=True, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
-    memberships = relationship("Membership", back_populates="team")
+    memberships = relationship("Membership", back_populates="team", cascade="all, delete-orphan")
+    invitations = relationship("Invitations", back_populates="team", cascade="all, delete-orphan")
+    notifications = relationship("Notifications", back_populates="team", cascade="all, delete-orphan")
 
 class Membership(Base):
     __tablename__ = "memberships"
@@ -40,3 +43,24 @@ class Membership(Base):
 
     user = relationship("User", back_populates="memberships")
     team = relationship("Team", back_populates="memberships")
+
+class Invitations(Base):
+    __tablename__ = "invitations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    invited_user_email = Column(String, nullable=False)
+
+    team = relationship("Team", back_populates="invitations")
+
+class Notifications(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    message = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    user = relationship("User", back_populates="notifications")
+    team = relationship("Team", back_populates="notifications")
