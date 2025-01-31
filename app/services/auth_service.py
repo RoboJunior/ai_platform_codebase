@@ -8,6 +8,7 @@ from app.db import models
 from app.db.session import get_db
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from itsdangerous import URLSafeTimedSerializer
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/v1/auth/login')
@@ -17,6 +18,10 @@ ALGORITHM = get_settings().ALGORITHM
 ACCESS_TOKEN_EXPIRY_MINUTES = get_settings().ACCESS_TOKEN_EXPIRY_MINUTES
 
 pwd_context = CryptContext(schemes=['bcrypt'], deprecated="auto")
+serializer = URLSafeTimedSerializer(
+        secret_key=SECRET_KEY,
+        salt="email-configuration"
+    )
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -48,3 +53,17 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if not user:
         raise credential_exception
     return user
+
+def create_url_safe_token(data: dict):
+    token = serializer.dumps(data)
+    return token
+
+def decode_url_safe_token(token: str):
+    try:
+        token_data = serializer.loads(token)
+        return token_data
+    except Exception as e:
+        print("Invalid Token", e)
+
+
+

@@ -10,11 +10,15 @@ auth_router = APIRouter()
 
 @auth_router.post("/login", response_model=Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_database_session)):
+    # Get the current user 
     user = db.query(models.User).filter(models.User.email == user_credentials.username).first()
-
+    # Check wheather the user is verified or not
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User Not verified")
+    # Check wheather user exist or not
     if not user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
-
+    # Verify the password
     if not verify_password(user_credentials.password, user.password):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
 

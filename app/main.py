@@ -2,13 +2,15 @@ from fastapi import FastAPI
 from app.api.v1.api import api_router_v1
 from app.workers.temporal.client import TemporalWorker
 from app.workers.temporal.workflows.user_email_workflow import UserEmailWorkflow
-from app.workers.temporal.activities.user_email_activity import send_mail_to_user
+from app.workers.temporal.activities.user_email_activity import handle_email_workflow
 from app.workers.temporal.workflows.invitation_mail_workflow import InvitationEmailWorkflow
 from app.workers.temporal.activities.invitation_mail_activity import send_invitation_mail_to_user
 from app.workers.temporal.workflows.app_notifications_workflow import AppNotificationsWorkflow
 from app.workers.temporal.activities.app_notifications_activity import send_app_notifications_to_user
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
+
+# TODO do code cleanup in routes layer move all the bussiness logic to service file
 
 app = FastAPI()
 
@@ -24,7 +26,7 @@ app.add_middleware(
 user_email_worker = TemporalWorker(
     task_queue="user-email-task-queue", 
     workflows=[UserEmailWorkflow],
-    activities=[send_mail_to_user]
+    activities=[handle_email_workflow]
 )
 
 # Defining invitation mail workflow to send user invitation email

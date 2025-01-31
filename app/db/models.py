@@ -1,10 +1,11 @@
 from app.db.session import Base
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, Boolean, DateTime
 from sqlalchemy.sql.sqltypes import TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql import func
 import enum
+from datetime import datetime
 
 # Enum for user roles
 class Role(str, enum.Enum):
@@ -16,8 +17,12 @@ class User(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, nullable=False, index=True)
-    email = Column(String, nullable=False, unique=True)
-    password = Column(String, nullable=False)
+    name = Column(String(150))
+    email = Column(String(255), nullable=False, unique=True)
+    password = Column(String(100), nullable=False)
+    is_active = Column(Boolean, default=False)
+    verified_at = Column(DateTime, nullable=True, default=None)
+    updated_at = Column(DateTime, nullable=True, default=None, onupdate=datetime.utcnow)
     created_at = Column(TIMESTAMP, server_default=func.now())
     memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notifications", back_populates="user", cascade="all, delete-orphan")

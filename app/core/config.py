@@ -11,7 +11,18 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRY_MINUTES: int
-
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_FROM_NAME: str
+    MAIL_PORT: int
+    MAIL_SERVER:str
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = True
+    USE_CREDENTIALS: bool = True
+    VALIDATE_CERTS: bool = True
+    DOMAIN: str
+    
     model_config = SettingsConfigDict(env_file=".env")
 
 # All the configuration goes here.

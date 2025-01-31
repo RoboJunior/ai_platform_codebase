@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from app.db.models import Role
+from typing import List
 
 class CreateTeam(BaseModel):
     name: str
@@ -23,7 +24,7 @@ class JoinTeamResponse(BaseModel):
     role: str
 
 class InviteToTeam(BaseModel):
-    email: EmailStr
+    emails: List[EmailStr]
 
 class GetTeamMember(BaseModel):
     id: int
