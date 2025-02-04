@@ -60,7 +60,7 @@ async def delete_user(db: Session = Depends(get_database_session), current_user:
     return user
 
 @user_router.get('/verify/{token}')
-async def verify_user_account(token: str, db: Session = Depends(get_database_session)):
+async def verify_user_account(token: str, background_task: BackgroundTasks, db: Session = Depends(get_database_session)):
     # Decode the token 
     token = decode_url_safe_token(token)
     # Extract the user email and the timestamp
@@ -86,7 +86,11 @@ async def verify_user_account(token: str, db: Session = Depends(get_database_ses
     # Add the updated user details to the database
     db.commit()
     db.refresh(user)
-
+    html_content = templates.TemplateResponse(
+        "welcome_mail.html",
+        {"request": None, "username": user_email.split("@")[0], "user_email": user_email}
+    ).body.decode("utf-8")  # Convert from bytes to string
+    background_task.add_task(start_email_workflow, user_email, "Welcome to the platform!", html_content)
     return {"message": "User verified successfully", "email": user.email}
     
 

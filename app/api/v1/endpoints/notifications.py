@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from app.services.notification_service import notification_manager
+from app.services.notification_service import notification_manager, get_token_from_websocket
 from app.services.auth_service import get_current_user
 from sqlalchemy.orm import Session
 from app.api.v1.dependencies import get_database_session
@@ -8,12 +8,6 @@ from sqlalchemy import or_
 
 
 notification_router = APIRouter()
-
-async def get_token_from_websocket(websocket: WebSocket) -> str:
-    auth_header = websocket.headers.get('authorization')
-    if auth_header and auth_header.startswith('Bearer '):
-        return auth_header.split(' ')[1]
-    raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 @notification_router.websocket('/ws/{topic}/{topic_id}')
 async def send_notification_to_user(

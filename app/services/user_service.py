@@ -4,7 +4,6 @@ from app.core.config import get_settings
 from app.workers.temporal.workflows.user_email_workflow import UserEmailWorkflow
 import uuid
 from typing import List, Union, Optional
-import secrets
 from pydantic import EmailStr
 from app.services.mail.mail_service import mail, create_message
 
@@ -28,9 +27,6 @@ async def start_email_workflow(email_addresses: Optional[Union[EmailStr, List[Em
         args=[email_addresses, subject, html_content]
     )
     return email_workflow
-
-def generate_team_code() -> str:
-    return secrets.token_hex(2).upper()
 
 async def dispatch_verification_email(email: str, subject: str, html_content: str):
     try:

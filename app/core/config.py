@@ -6,8 +6,6 @@ from functools import lru_cache
 class Settings(BaseSettings):
     DATABASE_NAME: str
     TEMPORAL_URL: str
-    SENDER_EMAIL: str
-    SENDER_PASSWORD: str
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRY_MINUTES: int

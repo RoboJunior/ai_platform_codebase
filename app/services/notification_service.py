@@ -1,11 +1,10 @@
-from typing import Dict, List, Union
-from fastapi import WebSocket, Depends
+from typing import Dict, List
+from fastapi import WebSocket, HTTPException
 from app.core.config import get_settings
 from temporalio.client import Client
 import uuid
 from sqlalchemy.orm import Session
 from app.workers.temporal.workflows.app_notifications_workflow import AppNotificationsWorkflow
-from app.api.v1.dependencies import get_database_session
 from app.db import models
 
 class NotificationManager:
@@ -59,5 +58,11 @@ async def start_app_notifications_workflow(topics: List[dict], message: str, db:
     db.commit()
     
     return app_notification_workflow
+
+async def get_token_from_websocket(websocket: WebSocket) -> str:
+    auth_header = websocket.headers.get('authorization')
+    if auth_header and auth_header.startswith('Bearer '):
+        return auth_header.split(' ')[1]
+    raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 notification_manager = NotificationManager()
