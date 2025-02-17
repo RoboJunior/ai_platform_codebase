@@ -26,6 +26,7 @@ class User(Base):
     created_at = Column(TIMESTAMP, server_default=func.now())
     memberships = relationship("Membership", back_populates="user", cascade="all, delete-orphan")
     notifications = relationship("Notifications", back_populates="user", cascade="all, delete-orphan")
+    otps = relationship("PasswordResetOTP", back_populates="user")
 
 class Team(Base):
     __tablename__ = "teams"
@@ -69,3 +70,18 @@ class Notifications(Base):
 
     user = relationship("User", back_populates="notifications")
     team = relationship("Team", back_populates="notifications")
+
+class PasswordResetOTP(Base):
+    __tablename__ = "password_reset_opts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    hashed_otp = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    is_valid = Column(Boolean, default=True)
+    attempts = Column(Integer, default=0)
+    max_attempts = 5
+
+    user = relationship("User", back_populates="otps")

@@ -10,7 +10,7 @@ from app.workers.temporal.activities.app_notifications_activity import send_app_
 import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 
-# TODO do code cleanup in routes layer move all the bussiness logic to service file
+# TODO write the cleanup logic for cleaning up otp's using temporlio
 
 app = FastAPI()
 

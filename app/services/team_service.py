@@ -8,8 +8,6 @@ from app.services.mail.mail_service import mail, create_message
 from app.db import models
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from fastapi import Depends
-from app.api.v1.dependencies import get_database_session
 from app.api.v1.schemas.team import UpdateUserRole
 import secrets
 

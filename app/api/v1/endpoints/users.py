@@ -5,12 +5,13 @@ from app.api.v1.schemas.user import UserCreate, UserResponse, UserDelete
 from sqlalchemy.orm import Session
 from app.api.v1.dependencies import get_database_session
 from app.db import models
-from app.services.user_service import hash_password, start_email_workflow
-from app.services.auth_service import get_current_user, create_url_safe_token, decode_url_safe_token
+from app.services.user_service import hash_password, start_email_workflow, create_new_otp, validate_otp
+from app.services.auth_service import get_current_user, create_url_safe_token, decode_url_safe_token, verify_password
 from fastapi import HTTPException
 from app.core.config import get_settings
 from fastapi.templating import Jinja2Templates
 from datetime import datetime, timedelta
+from pydantic import EmailStr
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # Path where the template folder resides
@@ -59,6 +60,83 @@ async def delete_user(db: Session = Depends(get_database_session), current_user:
     db.commit()
     return user
 
+@user_router.post('/forget_password', status_code=status.HTTP_200_OK)
+def forget_password(email: EmailStr, background_task: BackgroundTasks, db: Session = Depends(get_database_session)):
+    # Get the current user
+    user = db.query(models.User).filter(models.User.email == email).first()
+
+    # Check wheather its a valid user or not
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Create otp and add the otp to the database 
+    created_otp = create_new_otp(db, user.id)
+
+    html_content = templates.TemplateResponse(
+        "forget_password_mail.html",
+        {"request": None, "username": email.split("@")[0], 
+        "user_email": email, "otp_code": created_otp}
+    ).body.decode("utf-8")
+
+    # Send the otp through mail to the user 
+    background_task.add_task(start_email_workflow, email, "Password reset mail", html_content)
+
+    ##TODO this will be changed to frontend url redirect page 
+    return {"message": "Please verify your email for the otp"}
+
+@user_router.post('/verify_otp', status_code=status.HTTP_200_OK)
+def verify_otp(email: EmailStr, otp: str, db: Session = Depends(get_database_session)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+
+    # Check wheather the user is valid user or not
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check wheather the otp is invalid or not 
+    result = validate_otp(db, user.id, otp)
+
+    # Return the error occured
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result['error'])
+
+    ###TODO Here instead of this route it to a frontend page.
+    return {"message": "OTP verified successfully!"}
+
+@user_router.post('/reset_password', status_code=status.HTTP_200_OK)
+def reset_password(email: EmailStr, otp: str, new_password: str, db: Session = Depends(get_database_session)):
+    user = db.query(models.User).filter(models.User.email == email).first()
+    # Check wheather the user is valid user or not
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Check wheather the otp is valid or not
+    result = validate_otp(db, user.id, otp)
+    # Return the error occured
+    if "error" in result:
+        raise HTTPException(status_code=404, detail=result['error'])
+    # Check wheather the user is trying to set the old password as new password
+    if verify_password(new_password, user.password):
+        raise HTTPException(status_code=400, 
+            detail="New password cannot be same as the old password")
+    
+    valid_otp = result['success']
+    try:
+        # Mark OTP as used BEFORE updating password
+        valid_otp.used_at = datetime.utcnow()
+        valid_otp.is_valid = False
+        db.commit()
+        # Update password
+        user.password = hash_password(new_password)
+        db.commit()
+        db.refresh(user)
+        ### TODO route this to frontend on successfully request 
+        return {"message": "Password reset successful"}
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred"
+        )
+
 @user_router.get('/verify/{token}')
 async def verify_user_account(token: str, background_task: BackgroundTasks, db: Session = Depends(get_database_session)):
     # Decode the token 
@@ -91,9 +169,6 @@ async def verify_user_account(token: str, background_task: BackgroundTasks, db: 
         {"request": None, "username": user_email.split("@")[0], "user_email": user_email}
     ).body.decode("utf-8")  # Convert from bytes to string
     background_task.add_task(start_email_workflow, user_email, "Welcome to the platform!", html_content)
+
+    ##TODO this will be changed to frontend url redirect page 
     return {"message": "User verified successfully", "email": user.email}
-    
-
-    
-
-    
