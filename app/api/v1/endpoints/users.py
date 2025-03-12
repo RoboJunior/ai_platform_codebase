@@ -5,8 +5,9 @@ from app.api.v1.schemas.user import UserCreate, UserResponse, UserDelete
 from sqlalchemy.orm import Session
 from app.api.v1.dependencies import get_database_session
 from app.db import models
-from app.services.user_service import hash_password, start_email_workflow, create_new_otp, validate_otp
+from app.services.user_service import hash_password, create_new_otp, validate_otp
 from app.services.auth_service import get_current_user, create_url_safe_token, decode_url_safe_token, verify_password
+from app.services.mail.mail_service import start_email_workflow
 from fastapi import HTTPException
 from app.core.config import get_settings
 from fastapi.templating import Jinja2Templates

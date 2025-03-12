@@ -12,9 +12,9 @@ from app.db import models
 # from app.services.user_service import generate_team_code
 from app.services.auth_service import get_current_user, create_url_safe_token, decode_url_safe_token
 from app.services.team_service import (
-    start_invitation_email_workflow, 
     fetch_all_teammates_from_database,
     change_user_role, create_new_team)
+from app.services.mail.mail_service import start_email_workflow
 from typing import List
 from app.services.notification_service import start_app_notifications_workflow
 from datetime import datetime
@@ -192,7 +192,7 @@ def invite_team(team_id: int, invited_members: InviteToTeam, background_task: Ba
 
             # Send an invitation email in the background
             background_task.add_task(
-                start_invitation_email_workflow, email, 
+                start_email_workflow, email, 
                 f"You are invited To Join {team_details.name}!", html_content
             )
 
