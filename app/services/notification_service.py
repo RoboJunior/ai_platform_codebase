@@ -6,27 +6,10 @@ import uuid
 from sqlalchemy.orm import Session
 from app.workers.temporal.workflows.app_notifications_workflow import AppNotificationsWorkflow
 from app.db import models
+import redis.asyncio as redis
 
-class NotificationManager:
-    def __init__(self):
-        self.subscriptions: Dict[str, List[WebSocket]] = {}
-
-    async def subscribe(self, topic: str, websocket: WebSocket):
-        if topic not in self.subscriptions:
-            self.subscriptions[topic] = []
-        self.subscriptions[topic].append(websocket)
-
-    def unsubscribe(self, topic: str, websocket: WebSocket):
-        if topic in self.subscriptions:
-            self.subscriptions[topic].remove(websocket)
-
-    async def notify(self, topic: str, message: str):
-        if topic in self.subscriptions:
-            for websocket in self.subscriptions[topic]:
-                try:
-                    await websocket.send_text(message)
-                except Exception:
-                    self.unsubscribe(topic, websocket)
+# Create a redis client
+redis_client = redis.Redis(host=get_settings().REDIS_HOST, port=get_settings().REDIS_PORT, decode_responses=True)
 
 async def create_temporal_client():
     return await Client.connect(get_settings().TEMPORAL_URL)
@@ -64,5 +47,3 @@ async def get_token_from_websocket(websocket: WebSocket) -> str:
     if auth_header and auth_header.startswith('Bearer '):
         return auth_header.split(' ')[1]
     raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-
-notification_manager = NotificationManager()

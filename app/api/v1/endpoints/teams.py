@@ -217,6 +217,7 @@ def get_all_teammates(team_id: int, db: Session = Depends(get_database_session),
 
 @team_router.delete('/remove_user/{user_id}/{team_id}', response_model=RemoveTeamMember)
 def remove_user_from_the_team(user_id: int, team_id: int, db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
+    print(current_user.email)
     # Check wheather the team exist or not
     team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not team:
@@ -246,7 +247,7 @@ def remove_user_from_the_team(user_id: int, team_id: int, db: Session = Depends(
     
     is_invited = db.query(models.Invitations).filter(
         models.Invitations.team_id == team_id,
-        models.Invitations.invited_user_email == current_user.email
+        models.Invitations.invited_user_email == user.email
     ).first()
     
     # Delete the invitation of the user preventing the user from joining the team again without any admin permission

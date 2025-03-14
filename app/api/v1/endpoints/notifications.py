@@ -1,11 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from app.services.notification_service import notification_manager, get_token_from_websocket
+from app.services.notification_service import get_token_from_websocket, redis_client
 from app.services.auth_service import get_current_user
 from sqlalchemy.orm import Session
 from app.api.v1.dependencies import get_database_session
 from app.db import models
 from sqlalchemy import or_
-
 
 notification_router = APIRouter()
 
@@ -33,12 +32,22 @@ async def send_notification_to_user(
                 raise HTTPException(status_code=403, detail="User is not part of the team")
         
         await websocket.accept()
-        await notification_manager.subscribe(topic_id, websocket)
-        
-        while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        notification_manager.unsubscribe(topic, websocket)
+        # Subscribe to redis pub/sub service
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe(topic_id)
+
+        # Listen for messages from Redis and send them to the WebSocket
+        try:
+            async for message in pubsub.listen():
+                if message["type"] == "message":
+                    await websocket.send_text(message["data"])
+        except WebSocketDisconnect:
+            print(f"WebSocket disconnected for {topic_id}")
+        finally:
+            await pubsub.unsubscribe(topic_id)
+            await pubsub.close()
+            await websocket.close()
+
     except HTTPException as he:
         await websocket.close(code=4001, reason=str(he.detail))
     except Exception as e:

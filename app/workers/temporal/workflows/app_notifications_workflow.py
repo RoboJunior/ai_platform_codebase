@@ -20,7 +20,7 @@ class AppNotificationsWorkflow:
                     )
                     if result:
                         results.append(result)
-            
+                        
             return results if results else ["No notifications sent"]
             
         except Exception as e:
