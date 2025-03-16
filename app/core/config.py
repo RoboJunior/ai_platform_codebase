@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     DOMAIN: str
     REDIS_HOST: str
     REDIS_PORT: int
+    VAULT_SERVER: str
     
     model_config = SettingsConfigDict(env_file=".env")
 

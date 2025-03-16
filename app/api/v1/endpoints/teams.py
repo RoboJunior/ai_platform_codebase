@@ -215,9 +215,25 @@ def get_all_teammates(team_id: int, db: Session = Depends(get_database_session),
     teammates = fetch_all_teammates_from_database(current_user.id, team_id, db)
     return teammates
 
+@team_router.get('/get_all_teams', status_code=status.HTTP_200_OK)
+def get_all_teams(db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
+    # Check wheather the user exist or not
+    user = db.query(models.User).filter(models.User.id == current_user.id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User doesnt exist")
+    # Get all the teams where the user is member
+    teams = (
+    db.query(models.Membership.team_id, models.Team.name.label("name"), models.Membership.role)
+    .join(models.Team, models.Membership.team_id == models.Team.id)
+    .filter(models.Membership.user_id == current_user.id)
+    .all()
+    )
+    # Convert the result into a list of dictionaries
+    teams_response = [{"team_id": t.team_id, "team_name": t.name, "role": t.role} for t in teams]
+    return teams_response
+
 @team_router.delete('/remove_user/{user_id}/{team_id}', response_model=RemoveTeamMember)
 def remove_user_from_the_team(user_id: int, team_id: int, db: Session = Depends(get_database_session), current_user: int = Depends(get_current_user)):
-    print(current_user.email)
     # Check wheather the team exist or not
     team = db.query(models.Team).filter(models.Team.id == team_id).first()
     if not team:
