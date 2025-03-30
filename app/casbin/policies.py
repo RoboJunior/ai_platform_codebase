@@ -11,6 +11,9 @@ DEFAULT_POLICIES: Dict[str, List[Tuple[str, str]]] = {
         ("source_minio", "read"),
         ("source_minio", "write"),
         ("source_minio", "delete"),
+        ("source_minio", "list_all_requests"),
+        ("source_minio", "approve_request"),
+        ("source_minio", "reject_request"),
         ("vault", "read"),
         ("vault", "write"),
         ("vault", "update"),
@@ -21,6 +24,8 @@ DEFAULT_POLICIES: Dict[str, List[Tuple[str, str]]] = {
         ("files", "create"),
         ("files", "update"),
         ("source_minio", "read"),
+        ("source_minio", "request"),
+        ("source_minio", "list_user_requests"),
         ("vault", "read")
     ],
     "viewer": [

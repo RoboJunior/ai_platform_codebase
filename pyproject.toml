@@ -25,6 +25,7 @@ redis = "^5.2.1"
 casbin-sqlalchemy-adapter = "^1.4.0"
 minio = "^7.2.15"
 hvac = "^2.3.0"
+grpcio = "^1.71.0"
 
 
 [build-system]

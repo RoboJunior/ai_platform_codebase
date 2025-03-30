@@ -8,8 +8,13 @@ from app.workers.temporal.workflows.app_notifications_workflow import AppNotific
 from app.db import models
 import redis.asyncio as redis
 
+# Create a redis connection pool
+redis_pool = redis.ConnectionPool(host=get_settings().REDIS_HOST, 
+                                  port=get_settings().REDIS_PORT, 
+                                  db=0, decode_responses=True)
+
 # Create a redis client
-redis_client = redis.Redis(host=get_settings().REDIS_HOST, port=get_settings().REDIS_PORT, decode_responses=True)
+redis_client = redis.Redis(connection_pool=redis_pool)
 
 async def create_temporal_client():
     return await Client.connect(get_settings().TEMPORAL_URL)

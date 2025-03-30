@@ -30,6 +30,14 @@ async def send_notification_to_user(
             # Raising forbidden if the user is not part the team
             if not is_member:
                 raise HTTPException(status_code=403, detail="User is not part of the team")
+            
+        if topic == "users":
+            # Check if the user exist in the database
+            user = db.query(models.User).filter(models.User.id == topic_id).first()
+
+            # Rasing forbidden if the user is not found
+            if not user:
+                raise HTTPException(status_code=403, detail="User not found")
         
         await websocket.accept()
         # Subscribe to redis pub/sub service

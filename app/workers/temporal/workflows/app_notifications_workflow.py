@@ -1,6 +1,6 @@
 from temporalio import workflow
 from datetime import timedelta
-from typing import List, Union
+from typing import List
 
 @workflow.defn
 class AppNotificationsWorkflow:
